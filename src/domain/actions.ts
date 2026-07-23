@@ -1,4 +1,6 @@
 import type { CharacterId } from "./character"
+import { applyCharacterEffects } from "./effects"
+import { getInteractionEligibility, type ObjectStateEffect } from "./interactable-object"
 import { cloneGameSession, type GameSessionSnapshot } from "./session"
 
 export type ActionKind = "wait" | "move" | "interact"
@@ -16,6 +18,11 @@ export type ActionFailureReason =
   | "invalid-target"
   | "missing-space"
   | "not-adjacent"
+  | "missing-object"
+  | "remote-object"
+  | "unknown-interaction"
+  | "ineligible-interaction"
+  | "invalid-effect"
 
 export type ActionResult =
   | {
@@ -57,6 +64,10 @@ export function executeCharacterAction(
     return executeMoveAction(session, request.actorId, request.target)
   }
 
+  if (request.kind === "interact") {
+    return executeInteractionAction(session, request.actorId, request.target)
+  }
+
   return fail(session, "unknown-action-kind", `Action ${request.kind} is not supported.`)
 }
 
@@ -81,6 +92,117 @@ function executeWaitAction(
     session: nextSession,
     message: `${nextActor.name} waits.`,
   }
+}
+
+/** Executes an instant object interaction in the actor's current space. */
+function executeInteractionAction(
+  session: GameSessionSnapshot,
+  actorId: CharacterId,
+  target: Record<string, string> | undefined,
+): ActionResult {
+  const actor = session.characters[actorId]
+  const objectId = target?.objectId
+  const interactionKey = target?.interactionKey
+
+  if (!objectId || !interactionKey) {
+    return fail(session, "invalid-target", "Interaction requires an object and key.")
+  }
+
+  const object = session.objects[objectId]
+  if (!object) {
+    return fail(session, "missing-object", `Object ${objectId} does not exist.`)
+  }
+
+  if (object.spaceId !== actor.currentSpaceId) {
+    return fail(
+      session,
+      "remote-object",
+      `Object ${object.name} is not in ${actor.currentSpaceId}.`,
+    )
+  }
+
+  const interaction = object.interactions[interactionKey]
+  if (!interaction) {
+    return fail(
+      session,
+      "unknown-interaction",
+      `Interaction ${interactionKey} does not exist on ${object.name}.`,
+    )
+  }
+
+  const eligibility = getInteractionEligibility(object, interactionKey)
+  if (!eligibility.eligible) {
+    return fail(session, "ineligible-interaction", eligibility.reason)
+  }
+
+  const characterEffectResult = applyCharacterEffects(
+    actor,
+    interaction.characterEffects,
+  )
+  if (!characterEffectResult.ok) {
+    return fail(session, "invalid-effect", characterEffectResult.errors.join(" "))
+  }
+
+  const objectEffectValidation = validateObjectStateEffects(
+    object.state,
+    interaction.objectEffects ?? [],
+    interactionKey,
+  )
+  if (!objectEffectValidation.ok) {
+    return fail(session, "invalid-effect", objectEffectValidation.message)
+  }
+
+  const nextSession = cloneGameSession(session)
+  const nextActor = nextSession.characters[actorId]
+  const nextObject = nextSession.objects[objectId]
+  nextSession.characters[actorId] = {
+    ...characterEffectResult.character,
+    currentActivity: null,
+  }
+
+  for (const objectEffect of interaction.objectEffects ?? []) {
+    if (objectEffect.operation === "set") {
+      nextObject.state[objectEffect.key] = objectEffect.value
+    } else {
+      nextObject.state[objectEffect.key] =
+        Number(nextObject.state[objectEffect.key]) + Number(objectEffect.value)
+    }
+  }
+
+  const changeSummary = characterEffectResult.changes
+    .map((change) => `${change.statKey} ${change.before}->${change.after}`)
+    .join(", ")
+  const message = `${nextActor.name} used ${nextObject.name}: ${changeSummary}.`
+  nextSession.actionLog = [
+    createActionLogEntry(nextSession, actorId, message, "success"),
+    ...nextSession.actionLog,
+  ]
+
+  return {
+    ok: true,
+    session: nextSession,
+    message,
+  }
+}
+
+/** Validates object state effects before an interaction mutates session state. */
+function validateObjectStateEffects(
+  state: Record<string, number | boolean | string>,
+  effects: ObjectStateEffect[],
+  interactionKey: string,
+): { ok: true } | { ok: false; message: string } {
+  for (const effect of effects) {
+    if (effect.operation === "add") {
+      if (typeof state[effect.key] !== "number" || typeof effect.value !== "number") {
+        return {
+          ok: false,
+          message: `Interaction ${interactionKey} can only add numeric object state.`,
+        }
+      }
+    }
+  }
+
+  return { ok: true }
 }
 
 /** Executes an instant move action between adjacent spaces. */
