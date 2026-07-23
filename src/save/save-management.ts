@@ -107,7 +107,8 @@ export function saveGameToFile(name: string): void {
 /** Reads a JSON save file and writes its payload into the global store. */
 export async function loadGameFromFile(file: File): Promise<GameSaveFile> {
   const fileText = await file.text()
-  const parsedFile = JSON.parse(fileText) as Partial<GameSaveFile> & {
+  const parsedFile = JSON.parse(fileText) as Partial<Omit<GameSaveFile, "version">> & {
+    version?: number
     payload?: unknown
   }
 
