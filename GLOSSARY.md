@@ -13,3 +13,7 @@ Character - A person in the game session with a stable identity, current space, 
 Character Stat - A bounded character value such as hunger, energy, or morale
 
 Character Activity - The action or task a character is currently performing, if any
+
+Interactable Object - An object placed in a World Space that advertises interactions characters can use
+
+Interaction - A serializable object action with eligibility requirements and declared state effects
