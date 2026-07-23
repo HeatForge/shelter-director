@@ -86,10 +86,18 @@ describe("global store session", () => {
 
     expect(getGlobalStorePayload()).toEqual({
       schemaVersion: 2,
-      characters: {},
-      spaces: {},
-      objects: {},
-      actionLog: [],
+      characters: expect.objectContaining({
+        mara: expect.objectContaining({ currentSpaceId: "bunk-room" }),
+      }),
+      spaces: expect.objectContaining({
+        "bunk-room": expect.objectContaining({ connectedSpaceIds: ["mess-hall"] }),
+      }),
+      objects: expect.objectContaining({
+        "food-station": expect.objectContaining({ spaceId: "mess-hall" }),
+      }),
+      actionLog: expect.arrayContaining([
+        expect.objectContaining({ message: "Demo shelter initialized." }),
+      ]),
     })
   })
 })

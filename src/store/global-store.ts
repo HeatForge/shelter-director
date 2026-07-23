@@ -1,8 +1,8 @@
 import { create } from "zustand"
 
+import { createDemoSession } from "@/domain/demo-fixture"
 import {
   cloneGameSession,
-  createEmptyGameSession,
   type GameSessionSnapshot,
 } from "@/domain/session"
 import { getCharactersInSpace, getNeighborSpaces } from "@/domain/world-space"
@@ -30,9 +30,9 @@ export type GlobalStoreState = {
 
 /** Global store hook for the authoritative game session. */
 export const useGlobalStore = create<GlobalStoreState>((set, get) => ({
-  session: createEmptyGameSession(),
+  session: createDemoSession(),
   hydrateSession: (session) => set({ session: cloneGameSession(session) }),
-  resetSession: () => set({ session: createEmptyGameSession() }),
+  resetSession: () => set({ session: createDemoSession() }),
   getCharacter: (characterId) => get().session.characters[characterId],
   getSpace: (spaceId) => get().session.spaces[spaceId],
   getCharactersInSpace: (spaceId) => getCharactersInSpace(get().session, spaceId),
