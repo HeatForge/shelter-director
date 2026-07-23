@@ -1,13 +1,11 @@
 import Dexie, { type EntityTable } from "dexie"
 
+import type { GameSessionSnapshot } from "@/domain/session"
+
 /**
  * Persisted snapshot of global store values kept inside a save slot.
  */
-export type GameSavePayload = {
-  alpha: number
-  beta: number
-  gamma: number
-}
+export type GameSavePayload = GameSessionSnapshot
 
 /**
  * One saved game session stored in IndexedDB.

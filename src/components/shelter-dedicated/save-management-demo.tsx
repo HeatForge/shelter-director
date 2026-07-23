@@ -179,9 +179,9 @@ export default function SaveManagementDemo() {
                     #{saveSlot.id} {saveSlot.name}
                   </div>
                   <div className="font-mono text-xs text-muted-foreground">
-                    a:{saveSlot.payload.alpha.toFixed(1)} b:
-                    {saveSlot.payload.beta.toFixed(1)} g:
-                    {saveSlot.payload.gamma.toFixed(1)}
+                    c:{Object.keys(saveSlot.payload.characters).length} s:
+                    {Object.keys(saveSlot.payload.spaces).length} o:
+                    {Object.keys(saveSlot.payload.objects).length}
                   </div>
                 </div>
                 <div className="flex gap-2">
