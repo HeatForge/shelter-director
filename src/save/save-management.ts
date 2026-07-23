@@ -3,11 +3,12 @@ import {
   type GameSavePayload,
   type GameSaveRecord,
 } from "@/db/game-database"
+import { validateGameSessionSnapshot } from "@/domain/session"
 import { getGlobalStorePayload, useGlobalStore } from "@/store/global-store"
 
 /** File format written when exporting a save to disk. */
 export type GameSaveFile = {
-  version: 1
+  version: 2
   name: string
   createdAt: number
   updatedAt: number
@@ -15,12 +16,14 @@ export type GameSaveFile = {
 }
 
 const SAVE_FILE_EXTENSION = ".shelter.json"
+const OLD_PLACEHOLDER_SAVE_ERROR =
+  "This save uses an older placeholder format and cannot be loaded."
 
 /** Builds a save file object from a name and the current global store values. */
-function createSaveFileFromStore(name: string): GameSaveFile {
+export function createSaveFileFromStore(name: string): GameSaveFile {
   const timestamp = Date.now()
   return {
-    version: 1,
+    version: 2,
     name,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -70,7 +73,8 @@ export async function loadGameFromDatabase(saveId: number): Promise<GameSaveReco
     throw new Error(`No save found for id ${saveId}.`)
   }
 
-  useGlobalStore.getState().hydrateFromSave(savedRecord.payload)
+  const payload = validateSavePayload(savedRecord.payload)
+  useGlobalStore.getState().hydrateSession(payload)
   return savedRecord
 }
 
@@ -103,14 +107,30 @@ export function saveGameToFile(name: string): void {
 /** Reads a JSON save file and writes its payload into the global store. */
 export async function loadGameFromFile(file: File): Promise<GameSaveFile> {
   const fileText = await file.text()
-  const parsedFile = JSON.parse(fileText) as GameSaveFile
+  const parsedFile = JSON.parse(fileText) as Partial<Omit<GameSaveFile, "version">> & {
+    version?: number
+    payload?: unknown
+  }
 
-  if (parsedFile.version !== 1 || !parsedFile.payload) {
+  if (parsedFile.version === 1) {
+    throw new Error(OLD_PLACEHOLDER_SAVE_ERROR)
+  }
+
+  if (parsedFile.version !== 2 || !parsedFile.payload) {
     throw new Error("The selected file is not a valid shelter save.")
   }
 
-  useGlobalStore.getState().hydrateFromSave(parsedFile.payload)
-  return parsedFile
+  const payload = validateSavePayload(parsedFile.payload)
+  const saveFile: GameSaveFile = {
+    version: 2,
+    name: parsedFile.name || file.name,
+    createdAt: parsedFile.createdAt || Date.now(),
+    updatedAt: parsedFile.updatedAt || Date.now(),
+    payload,
+  }
+
+  useGlobalStore.getState().hydrateSession(saveFile.payload)
+  return saveFile
 }
 
 /** Imports a JSON save file into IndexedDB and returns the new record. */
@@ -129,4 +149,22 @@ export async function importGameFileToDatabase(file: File): Promise<GameSaveReco
   }
 
   return savedRecord
+}
+
+/** Validates a save payload before it can replace the live session. */
+export function validateSavePayload(payload: unknown): GameSavePayload {
+  if (!isRecord(payload)) {
+    throw new Error("The selected file is not a valid shelter save.")
+  }
+
+  const validationResult = validateGameSessionSnapshot(payload as GameSavePayload)
+  if (!validationResult.ok) {
+    throw new Error(validationResult.errors.join(" "))
+  }
+
+  return validationResult.value
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
 }

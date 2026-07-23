@@ -12,7 +12,7 @@ import {
 } from "@/save/save-management"
 
 /**
- * Temporary demo for saving and loading the current global store values
+ * Saves and loads the current game session
  * through IndexedDB and downloadable JSON files.
  */
 export default function SaveManagementDemo() {
@@ -118,9 +118,9 @@ export default function SaveManagementDemo() {
 
   return (
     <div className="flex min-w-80 flex-col gap-3 rounded-xl border-2 border-accent p-4">
-      <h2 className="text-lg font-bold">Save Management Demo</h2>
+      <h2 className="text-lg font-bold">Save Management</h2>
       <p className="text-sm text-muted-foreground">
-        Saves and loads the current global store values through IndexedDB or a
+        Saves and loads the current game session through IndexedDB or a
         JSON file.
       </p>
 
@@ -179,9 +179,9 @@ export default function SaveManagementDemo() {
                     #{saveSlot.id} {saveSlot.name}
                   </div>
                   <div className="font-mono text-xs text-muted-foreground">
-                    a:{saveSlot.payload.alpha.toFixed(1)} b:
-                    {saveSlot.payload.beta.toFixed(1)} g:
-                    {saveSlot.payload.gamma.toFixed(1)}
+                    characters:{Object.keys(saveSlot.payload.characters).length} spaces:
+                    {Object.keys(saveSlot.payload.spaces).length} objects:
+                    {Object.keys(saveSlot.payload.objects).length}
                   </div>
                 </div>
                 <div className="flex gap-2">
