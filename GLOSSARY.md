@@ -23,3 +23,5 @@ Game Session - The complete in-memory snapshot of characters, spaces, interactab
 Action Pipeline - The shared domain path that validates and executes character action requests
 
 Action Log - Recent readable records describing successful or informational game session events
+
+Behavior Step - A deterministic simulation pass where characters choose one valid action from the current session state
