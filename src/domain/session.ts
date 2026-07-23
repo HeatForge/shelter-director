@@ -1,4 +1,10 @@
-import type { Character, CharacterId, SpaceId, ValidationResult } from "./character"
+import {
+  validateCharacter,
+  type Character,
+  type CharacterId,
+  type SpaceId,
+  type ValidationResult,
+} from "./character"
 import type {
   InteractableObject,
   InteractableObjectId,
@@ -49,8 +55,39 @@ export function validateGameSessionSnapshot(
 ): ValidationResult<GameSessionSnapshot> {
   const errors: string[] = []
 
+  if (!isRecord(session)) {
+    return { ok: false, errors: ["Game session must be an object."] }
+  }
+
   if (session.schemaVersion !== 2) {
     errors.push("Game session schema version must be 2.")
+  }
+
+  if (!isRecord(session.characters)) {
+    errors.push("Game session characters must be a record.")
+  }
+
+  if (!isRecord(session.spaces)) {
+    errors.push("Game session spaces must be a record.")
+  }
+
+  if (!isRecord(session.objects)) {
+    errors.push("Game session objects must be a record.")
+  }
+
+  if (!Array.isArray(session.actionLog)) {
+    errors.push("Game session action log must be an array.")
+  }
+
+  if (errors.length > 0) {
+    return { ok: false, errors }
+  }
+
+  for (const [characterId, character] of Object.entries(session.characters)) {
+    const characterValidation = validateCharacter(character)
+    if (!characterValidation.ok) {
+      errors.push(...characterValidation.errors.map((error) => `${characterId}: ${error}`))
+    }
   }
 
   const spacesValidation = validateSpaces(session.spaces)
@@ -73,4 +110,8 @@ export function validateGameSessionSnapshot(
   }
 
   return { ok: true, value: cloneGameSession(session) }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
 }

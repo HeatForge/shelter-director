@@ -3,7 +3,7 @@ import {
   validateCharacterEffects,
   type CharacterStateEffect,
 } from "./effects"
-import type { SpaceId } from "./world-space"
+import type { SpaceId } from "./character"
 
 export type InteractableObjectId = string
 export type InteractionKey = string
