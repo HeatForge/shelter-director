@@ -1,5 +1,7 @@
 import { create } from "zustand"
 
+import type { GameSavePayload } from "@/db/game-database"
+
 /**
  * Temporary placeholder values held in the global store until real game session data lands.
  */
@@ -18,6 +20,8 @@ export type GlobalStoreState = {
   setGamma: (gamma: number) => void
   /** Fills alpha, beta, and gamma with fresh random values. */
   randomizeAll: () => void
+  /** Writes a saved payload back into the live global store. */
+  hydrateFromSave: (payload: GameSavePayload) => void
 }
 
 /** Builds a random number between 0 and 100 for temporary store demos. */
@@ -42,4 +46,16 @@ export const useGlobalStore = create<GlobalStoreState>((set) => ({
       beta: createRandomValue(),
       gamma: createRandomValue(),
     }),
+  hydrateFromSave: (payload) =>
+    set({
+      alpha: payload.alpha,
+      beta: payload.beta,
+      gamma: payload.gamma,
+    }),
 }))
+
+/** Reads the current global store values into a saveable payload. */
+export function getGlobalStorePayload(): GameSavePayload {
+  const { alpha, beta, gamma } = useGlobalStore.getState()
+  return { alpha, beta, gamma }
+}
