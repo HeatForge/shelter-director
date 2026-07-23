@@ -7,6 +7,8 @@ import { runBehaviorStep } from "@/domain/behavior"
 import { getInteractionEligibility } from "@/domain/interactable-object"
 import { useGlobalStore } from "@/store/global-store"
 
+import SaveManagementDemo from "./save-management-demo"
+
 /** Shows the complete Characters In Spaces milestone loop in one debug view. */
 export default function CharactersInSpacesDebugView() {
   const session = useGlobalStore((state) => state.session)
@@ -258,6 +260,8 @@ export default function CharactersInSpacesDebugView() {
                 ))}
               </ol>
             </section>
+
+            <SaveManagementDemo/>
           </aside>
         </div>
       </div>

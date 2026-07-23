@@ -29,6 +29,9 @@ export class GameDatabase extends Dexie {
     this.version(1).stores({
       saves: "++id, name, updatedAt",
     })
+    this.version(2).stores({
+      saves: "++id, name, updatedAt",
+    })
   }
 }
 
