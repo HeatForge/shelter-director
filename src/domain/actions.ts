@@ -14,6 +14,8 @@ export type ActionFailureReason =
   | "actor-busy"
   | "unknown-action-kind"
   | "invalid-target"
+  | "missing-space"
+  | "not-adjacent"
 
 export type ActionResult =
   | {
@@ -47,18 +49,30 @@ export function executeCharacterAction(
     )
   }
 
-  if (request.kind !== "wait") {
-    return fail(session, "unknown-action-kind", `Action ${request.kind} is not supported.`)
+  if (request.kind === "wait") {
+    return executeWaitAction(session, request.actorId)
   }
 
+  if (request.kind === "move") {
+    return executeMoveAction(session, request.actorId, request.target)
+  }
+
+  return fail(session, "unknown-action-kind", `Action ${request.kind} is not supported.`)
+}
+
+/** Executes an instant wait action and records it in the action log. */
+function executeWaitAction(
+  session: GameSessionSnapshot,
+  actorId: CharacterId,
+): ActionResult {
   const nextSession = cloneGameSession(session)
-  const nextActor = nextSession.characters[request.actorId]
+  const nextActor = nextSession.characters[actorId]
   nextActor.currentActivity = {
     kind: "wait",
     label: "waiting",
   }
   nextSession.actionLog = [
-    createActionLogEntry(nextSession, request.actorId, `${nextActor.name} waits.`, "success"),
+    createActionLogEntry(nextSession, actorId, `${nextActor.name} waits.`, "success"),
     ...nextSession.actionLog,
   ]
 
@@ -66,6 +80,54 @@ export function executeCharacterAction(
     ok: true,
     session: nextSession,
     message: `${nextActor.name} waits.`,
+  }
+}
+
+/** Executes an instant move action between adjacent spaces. */
+function executeMoveAction(
+  session: GameSessionSnapshot,
+  actorId: CharacterId,
+  target: Record<string, string> | undefined,
+): ActionResult {
+  const destinationSpaceId = target?.destinationSpaceId
+  const actor = session.characters[actorId]
+
+  if (!destinationSpaceId) {
+    return fail(session, "invalid-target", "Move action requires a destination space.")
+  }
+
+  if (!session.spaces[destinationSpaceId]) {
+    return fail(session, "missing-space", `Space ${destinationSpaceId} does not exist.`)
+  }
+
+  const originSpace = session.spaces[actor.currentSpaceId]
+  if (!originSpace.connectedSpaceIds.includes(destinationSpaceId)) {
+    return fail(
+      session,
+      "not-adjacent",
+      `Space ${destinationSpaceId} is not connected to ${actor.currentSpaceId}.`,
+    )
+  }
+
+  const nextSession = cloneGameSession(session)
+  const nextActor = nextSession.characters[actorId]
+  const destinationSpace = nextSession.spaces[destinationSpaceId]
+  nextActor.currentSpaceId = destinationSpaceId
+  nextActor.currentActivity = null
+  nextSession.actionLog = [
+    createActionLogEntry(
+      nextSession,
+      actorId,
+      `${nextActor.name} moved to ${destinationSpace.name}.`,
+      "success",
+    ),
+    ...nextSession.actionLog,
+  ]
+
+  return {
+    ok: true,
+    session: nextSession,
+    message: `${nextActor.name} moved to ${destinationSpace.name}.`,
   }
 }
 
