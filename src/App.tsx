@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button"
 import { useTheme } from "./components/theme-provider"
+import GlobalStoreDemo from "./components/shelter-dedicated/global-store-demo"
 import TimeWidget from "./components/shelter-dedicated/time-widget"
 
 export function App() {
@@ -8,8 +8,9 @@ export function App() {
   theme.setTheme("dark")
 
   return (
-    <main>
+    <main className="flex flex-wrap gap-4 p-4">
       <TimeWidget/>
+      <GlobalStoreDemo/>
     </main>
   )
 }
