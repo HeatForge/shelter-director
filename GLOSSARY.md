@@ -1,5 +1,7 @@
 WorldCell - A cell of space with widht, depth and height that can connect to other cells and houses characters
 
+World Space - A traversable game location with stable identity, display metadata, and explicit connections to other spaces
+
 Global Store - Zustand store that keeps game session data globally accessible across the app
 
 Game Database - Dexie wrapper around IndexedDB that stores game save slots in the browser
