@@ -52,10 +52,10 @@ export const useGlobalStore = create<GlobalStoreState>((set) => ({
       beta: payload.beta,
       gamma: payload.gamma,
     }),
-})
+}))
 
 /** Reads the current global store values into a saveable payload. */
 export function getGlobalStorePayload(): GameSavePayload {
   const { alpha, beta, gamma } = useGlobalStore.getState()
   return { alpha, beta, gamma }
-})
+}

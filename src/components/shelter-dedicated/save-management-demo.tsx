@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from "react"
+import { useRef, useState, type ChangeEvent } from "react"
 
 import { Button } from "@/components/ui/button"
 import type { GameSaveRecord } from "@/db/game-database"
@@ -18,22 +18,17 @@ import {
 export default function SaveManagementDemo() {
   const [saveName, setSaveName] = useState("Quick Save")
   const [saveSlots, setSaveSlots] = useState<GameSaveRecord[]>([])
-  const [statusMessage, setStatusMessage] = useState("Ready.")
+  const [statusMessage, setStatusMessage] = useState("Ready. Refresh to load DB saves.")
   const [isBusy, setIsBusy] = useState(false)
+  const [hasLoadedSlots, setHasLoadedSlots] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   /** Refreshes the list of IndexedDB save slots shown in the demo. */
   const refreshSaveSlots = async () => {
     const nextSlots = await listGamesFromDatabase()
     setSaveSlots(nextSlots)
+    setHasLoadedSlots(true)
   }
-
-  useEffect(() => {
-    void refreshSaveSlots().catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : "Unknown error"
-      setStatusMessage(`Failed to list saves: ${message}`)
-    })
-  }, [])
 
   /** Runs an async save action and refreshes the slot list afterward. */
   const runSaveAction = async (
@@ -51,6 +46,22 @@ export default function SaveManagementDemo() {
     } finally {
       setIsBusy(false)
     }
+  }
+
+  /** Reloads IndexedDB save slots into the demo list. */
+  const handleRefreshSlots = () => {
+    setIsBusy(true)
+    void refreshSaveSlots()
+      .then(() => {
+        setStatusMessage("Refreshed database saves.")
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : "Unknown error"
+        setStatusMessage(`Refresh failed: ${message}`)
+      })
+      .finally(() => {
+        setIsBusy(false)
+      })
   }
 
   /** Writes the current global store into a new IndexedDB save slot. */
@@ -133,6 +144,9 @@ export default function SaveManagementDemo() {
         <Button variant="outline" onClick={handleOpenFilePicker} disabled={isBusy}>
           Load from file
         </Button>
+        <Button variant="outline" onClick={handleRefreshSlots} disabled={isBusy}>
+          Refresh list
+        </Button>
       </div>
 
       <input
@@ -147,7 +161,11 @@ export default function SaveManagementDemo() {
 
       <div className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold">Database saves</h3>
-        {saveSlots.length === 0 ? (
+        {!hasLoadedSlots ? (
+          <p className="text-sm text-muted-foreground">
+            Press refresh to load saves from IndexedDB.
+          </p>
+        ) : saveSlots.length === 0 ? (
           <p className="text-sm text-muted-foreground">No saves yet.</p>
         ) : (
           <ul className="flex flex-col gap-2">
