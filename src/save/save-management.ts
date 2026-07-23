@@ -70,7 +70,7 @@ export async function loadGameFromDatabase(saveId: number): Promise<GameSaveReco
     throw new Error(`No save found for id ${saveId}.`)
   }
 
-  useGlobalStore.getState().hydrateFromSave(savedRecord.payload)
+  useGlobalStore.getState().hydrateSession(savedRecord.payload)
   return savedRecord
 }
 
@@ -109,7 +109,7 @@ export async function loadGameFromFile(file: File): Promise<GameSaveFile> {
     throw new Error("The selected file is not a valid shelter save.")
   }
 
-  useGlobalStore.getState().hydrateFromSave(parsedFile.payload)
+  useGlobalStore.getState().hydrateSession(parsedFile.payload)
   return parsedFile
 }
 

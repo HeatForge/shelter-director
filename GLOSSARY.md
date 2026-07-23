@@ -17,3 +17,5 @@ Character Activity - The action or task a character is currently performing, if 
 Interactable Object - An object placed in a World Space that advertises interactions characters can use
 
 Interaction - A serializable object action with eligibility requirements and declared state effects
+
+Game Session - The complete in-memory snapshot of characters, spaces, interactable objects, and recent action log entries
