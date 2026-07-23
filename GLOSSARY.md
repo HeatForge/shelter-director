@@ -19,3 +19,7 @@ Interactable Object - An object placed in a World Space that advertises interact
 Interaction - A serializable object action with eligibility requirements and declared state effects
 
 Game Session - The complete in-memory snapshot of characters, spaces, interactable objects, and recent action log entries
+
+Action Pipeline - The shared domain path that validates and executes character action requests
+
+Action Log - Recent readable records describing successful or informational game session events
