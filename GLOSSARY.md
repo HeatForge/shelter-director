@@ -29,3 +29,7 @@ Behavior Step - A deterministic simulation pass where characters choose one vali
 Game Clock - The normalized in-session time hierarchy used to advance and coordinate future simulation systems
 
 Time Widget - The debug interface that displays the Game Clock and lets the player advance it by a chosen duration
+
+Content Catalogue - The single `src/content` directory that collects authored game definitions by content type and builds playable shelters from them
+
+Shelter Definition - A content record that selects the spaces, characters, and interactable objects that make up one starting shelter
