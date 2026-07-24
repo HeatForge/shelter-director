@@ -25,3 +25,7 @@ Action Pipeline - The shared domain path that validates and executes character a
 Action Log - Recent readable records describing successful or informational game session events
 
 Behavior Step - A deterministic simulation pass where characters choose one valid action from the current session state
+
+Game Clock - The normalized in-session time hierarchy used to advance and coordinate future simulation systems
+
+Time Widget - The debug interface that displays the Game Clock and lets the player advance it by a chosen duration

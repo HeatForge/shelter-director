@@ -5,18 +5,21 @@ import { Button } from "@/components/ui/button"
 import { executeCharacterAction, type ActionResult } from "@/domain/actions"
 import { runBehaviorStep } from "@/domain/behavior"
 import { getInteractionEligibility } from "@/domain/interactable-object"
+import { formatTimeUnit, type TimeDuration } from "@/domain/time"
 import { useGlobalStore } from "@/store/global-store"
 
 import SaveManagementDemo from "./save-management-demo"
+import TimeWidget from "./time-widget"
 
 /** Shows the complete Characters In Spaces milestone loop in one debug view. */
 export default function CharactersInSpacesDebugView() {
   const session = useGlobalStore((state) => state.session)
   const hydrateSession = useGlobalStore((state) => state.hydrateSession)
   const resetSession = useGlobalStore((state) => state.resetSession)
+  const advanceTime = useGlobalStore((state) => state.advanceTime)
   const characterIds = Object.keys(session.characters)
   const [selectedCharacterId, setSelectedCharacterId] = useState(
-    characterIds[0] ?? "",
+    characterIds[0] ?? ""
   )
   const [statusMessage, setStatusMessage] = useState("Ready.")
   const effectiveSelectedCharacterId = session.characters[selectedCharacterId]
@@ -33,10 +36,10 @@ export default function CharactersInSpacesDebugView() {
     () =>
       selectedCharacter
         ? Object.values(session.objects).filter(
-            (object) => object.spaceId === selectedCharacter.currentSpaceId,
+            (object) => object.spaceId === selectedCharacter.currentSpaceId
           )
         : [],
-    [selectedCharacter, session.objects],
+    [selectedCharacter, session.objects]
   )
 
   /** Applies an action result to the store and status line. */
@@ -59,7 +62,7 @@ export default function CharactersInSpacesDebugView() {
         actorId: selectedCharacter.id,
         kind: "move",
         target: { destinationSpaceId },
-      }),
+      })
     )
   }
 
@@ -74,7 +77,7 @@ export default function CharactersInSpacesDebugView() {
         actorId: selectedCharacter.id,
         kind: "interact",
         target: { objectId, interactionKey },
-      }),
+      })
     )
   }
 
@@ -85,7 +88,15 @@ export default function CharactersInSpacesDebugView() {
     setStatusMessage(
       stepResult.actionResults.length === 0
         ? stepResult.decisions.map((decision) => decision.reason).join(" ")
-        : stepResult.actionResults.map((result) => result.message).join(" "),
+        : stepResult.actionResults.map((result) => result.message).join(" ")
+    )
+  }
+
+  /** Advances the game clock and displays the selected duration in the status line. */
+  const handleTimeAdvance = (duration: TimeDuration) => {
+    advanceTime(duration)
+    setStatusMessage(
+      `Time advanced by ${duration.amount} ${formatTimeUnit(duration.unit, duration.amount)}.`
     )
   }
 
@@ -119,10 +130,10 @@ export default function CharactersInSpacesDebugView() {
           <section className="grid gap-3 md:grid-cols-3">
             {Object.values(session.spaces).map((space) => {
               const occupants = Object.values(session.characters).filter(
-                (character) => character.currentSpaceId === space.id,
+                (character) => character.currentSpaceId === space.id
               )
               const objects = Object.values(session.objects).filter(
-                (object) => object.spaceId === space.id,
+                (object) => object.spaceId === space.id
               )
 
               return (
@@ -132,11 +143,15 @@ export default function CharactersInSpacesDebugView() {
                 >
                   <div>
                     <h2 className="text-base font-semibold">{space.name}</h2>
-                    <p className="text-sm text-muted-foreground">{space.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {space.description}
+                    </p>
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {space.connectedSpaceIds
-                      .map((spaceId) => session.spaces[spaceId]?.name ?? spaceId)
+                      .map(
+                        (spaceId) => session.spaces[spaceId]?.name ?? spaceId
+                      )
                       .join(" / ")}
                   </div>
                   <div className="flex flex-col gap-2">
@@ -150,7 +165,9 @@ export default function CharactersInSpacesDebugView() {
                         }`}
                         onClick={() => setSelectedCharacterId(character.id)}
                       >
-                        <span className="block font-medium">{character.name}</span>
+                        <span className="block font-medium">
+                          {character.name}
+                        </span>
                         <span className="text-xs opacity-80">
                           H {character.stats.hunger.value} / E{" "}
                           {character.stats.energy.value} / M{" "}
@@ -184,30 +201,38 @@ export default function CharactersInSpacesDebugView() {
               </p>
               {selectedCharacter ? (
                 <div className="mt-4 grid gap-2">
-                  {Object.entries(selectedCharacter.stats).map(([statKey, stat]) => (
-                    <div key={statKey} className="grid gap-1">
-                      <div className="flex justify-between text-sm">
-                        <span className="capitalize">{statKey}</span>
-                        <span>
-                          {stat.value}/{stat.max}
-                        </span>
+                  {Object.entries(selectedCharacter.stats).map(
+                    ([statKey, stat]) => (
+                      <div key={statKey} className="grid gap-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="capitalize">{statKey}</span>
+                          <span>
+                            {stat.value}/{stat.max}
+                          </span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full bg-primary"
+                            style={{
+                              width:
+                                stat.max === stat.min
+                                  ? "100%"
+                                  : `${((stat.value - stat.min) / (stat.max - stat.min)) * 100}%`,
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full bg-primary"
-                          style={{
-                            width:
-                              stat.max === stat.min
-                                ? "100%"
-                                : `${((stat.value - stat.min) / (stat.max - stat.min)) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               ) : null}
             </section>
+
+            <TimeWidget
+              gameTime={session.gameTime}
+              onAdvance={handleTimeAdvance}
+              timeSimulation={session.timeSimulation}
+            />
 
             <section className="rounded-lg border border-border bg-card p-4">
               <h2 className="text-lg font-semibold">Movement</h2>
@@ -231,7 +256,10 @@ export default function CharactersInSpacesDebugView() {
               <div className="mt-3 flex flex-col gap-2">
                 {localObjects.flatMap((object) =>
                   Object.values(object.interactions).map((interaction) => {
-                    const eligibility = getInteractionEligibility(object, interaction.key)
+                    const eligibility = getInteractionEligibility(
+                      object,
+                      interaction.key
+                    )
 
                     return (
                       <Button
@@ -239,13 +267,15 @@ export default function CharactersInSpacesDebugView() {
                         variant="outline"
                         className="w-full justify-start whitespace-normal"
                         disabled={!eligibility.eligible}
-                        onClick={() => handleInteract(object.id, interaction.key)}
+                        onClick={() =>
+                          handleInteract(object.id, interaction.key)
+                        }
                       >
                         <MousePointer2 />
                         {interaction.name} at {object.name}
                       </Button>
                     )
-                  }),
+                  })
                 )}
               </div>
             </section>
@@ -254,14 +284,17 @@ export default function CharactersInSpacesDebugView() {
               <h2 className="text-lg font-semibold">Action Log</h2>
               <ol className="mt-3 flex max-h-60 flex-col gap-2 overflow-auto text-sm">
                 {session.actionLog.slice(0, 8).map((entry) => (
-                  <li key={entry.id} className="border-b border-border pb-2 last:border-0">
+                  <li
+                    key={entry.id}
+                    className="border-b border-border pb-2 last:border-0"
+                  >
                     {entry.message}
                   </li>
                 ))}
               </ol>
             </section>
 
-            <SaveManagementDemo/>
+            <SaveManagementDemo />
           </aside>
         </div>
       </div>

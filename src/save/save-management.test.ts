@@ -32,20 +32,25 @@ describe("save management", () => {
     }
 
     useGlobalStore.getState().hydrateSession(moved.session)
+    useGlobalStore.getState().advanceTime({ amount: 1, unit: "hour" })
     const savedRecord = await saveGameToDatabase("Movement Save")
     useGlobalStore.getState().resetSession()
 
     await loadGameFromDatabase(savedRecord.id)
 
-    expect(useGlobalStore.getState().session.characters.mara.currentSpaceId).toBe(
-      "mess-hall",
-    )
-    expect(useGlobalStore.getState().session.spaces["utility-room"].connectedSpaceIds).toEqual([
-      "mess-hall",
-    ])
+    expect(
+      useGlobalStore.getState().session.characters.mara.currentSpaceId
+    ).toBe("mess-hall")
+    expect(
+      useGlobalStore.getState().session.spaces["utility-room"].connectedSpaceIds
+    ).toEqual(["mess-hall"])
+    expect(useGlobalStore.getState().session.gameTime.hours).toBe(1)
+    expect(
+      useGlobalStore.getState().session.timeSimulation.dummySimulatedValue
+    ).toBe(3_600)
   })
 
-  it("round-trips a modified session through a version 2 JSON file", async () => {
+  it("round-trips a modified session through a version 3 JSON file", async () => {
     const moved = executeCharacterAction(createDemoSession(), {
       actorId: "mara",
       kind: "move",
@@ -63,12 +68,12 @@ describe("save management", () => {
     await loadGameFromFile(
       new File([JSON.stringify(saveFile)], "file-save.shelter.json", {
         type: "application/json",
-      }),
+      })
     )
 
-    expect(useGlobalStore.getState().session.characters.mara.currentSpaceId).toBe(
-      "mess-hall",
-    )
+    expect(
+      useGlobalStore.getState().session.characters.mara.currentSpaceId
+    ).toBe("mess-hall")
   })
 
   it("rejects old placeholder saves with a clear incompatibility error", async () => {
@@ -80,11 +85,11 @@ describe("save management", () => {
         }),
       ],
       "old-save.shelter.json",
-      { type: "application/json" },
+      { type: "application/json" }
     )
 
     await expect(loadGameFromFile(oldSaveFile)).rejects.toThrow(
-      "This save uses an older placeholder format and cannot be loaded.",
+      "This save uses an older placeholder format and cannot be loaded."
     )
   })
 
@@ -104,11 +109,11 @@ describe("save management", () => {
         }),
       ],
       "invalid-save.shelter.json",
-      { type: "application/json" },
+      { type: "application/json" }
     )
 
     await expect(loadGameFromFile(invalidFile)).rejects.toThrow(
-      "Game session spaces must be a record.",
+      "Game session spaces must be a record."
     )
     expect(useGlobalStore.getState().session).toEqual(beforeSession)
   })

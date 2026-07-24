@@ -1,8 +1,10 @@
 import { createCharacter } from "./character"
 import { cloneGameSession, type GameSessionSnapshot } from "./session"
+import { createTimeSimulationState } from "./time-simulation"
+import { createGameTime } from "./time"
 
 const demoSession: GameSessionSnapshot = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   spaces: {
     "bunk-room": {
       id: "bunk-room",
@@ -59,7 +61,9 @@ const demoSession: GameSessionSnapshot = {
           key: "eat",
           name: "Eat",
           requiredObjectState: { available: true },
-          characterEffects: [{ statKey: "hunger", operation: "add", value: 35 }],
+          characterEffects: [
+            { statKey: "hunger", operation: "add", value: 35 },
+          ],
           objectEffects: [{ key: "portions", operation: "add", value: -1 }],
         },
       },
@@ -94,6 +98,8 @@ const demoSession: GameSessionSnapshot = {
       result: "info",
     },
   ],
+  gameTime: createGameTime(),
+  timeSimulation: createTimeSimulationState(),
 }
 
 /** Creates the deterministic demo shelter session as a fresh snapshot. */

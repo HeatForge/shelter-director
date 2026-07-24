@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest"
 
+import { createTimeSimulationState } from "@/domain/time-simulation"
+import { createGameTime } from "@/domain/time"
 import type { GameSessionSnapshot } from "@/domain/session"
 
 import { getGlobalStorePayload, useGlobalStore } from "./global-store"
 
 const session: GameSessionSnapshot = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   spaces: {
     "bunk-room": {
       id: "bunk-room",
@@ -43,6 +45,8 @@ const session: GameSessionSnapshot = {
     },
   },
   actionLog: [],
+  gameTime: createGameTime(),
+  timeSimulation: createTimeSimulationState(),
 }
 
 describe("global store session", () => {
@@ -53,8 +57,12 @@ describe("global store session", () => {
   it("hydrates and reads one authoritative session snapshot", () => {
     useGlobalStore.getState().hydrateSession(session)
 
-    expect(useGlobalStore.getState().getCharacter("warden")?.name).toBe("Warden")
-    expect(useGlobalStore.getState().getSpace("bunk-room")?.name).toBe("Bunk Room")
+    expect(useGlobalStore.getState().getCharacter("warden")?.name).toBe(
+      "Warden"
+    )
+    expect(useGlobalStore.getState().getSpace("bunk-room")?.name).toBe(
+      "Bunk Room"
+    )
   })
 
   it("derives occupants, neighbors, and local objects through selectors", () => {
@@ -64,19 +72,19 @@ describe("global store session", () => {
       useGlobalStore
         .getState()
         .getCharactersInSpace("bunk-room")
-        .map((character) => character.id),
+        .map((character) => character.id)
     ).toEqual(["warden"])
     expect(
       useGlobalStore
         .getState()
         .getNeighborSpaces("bunk-room")
-        .map((space) => space.id),
+        .map((space) => space.id)
     ).toEqual(["mess-hall"])
     expect(
       useGlobalStore
         .getState()
         .getObjectsInSpace("mess-hall")
-        .map((object) => object.id),
+        .map((object) => object.id)
     ).toEqual(["food-station"])
   })
 
@@ -85,12 +93,14 @@ describe("global store session", () => {
     useGlobalStore.getState().resetSession()
 
     expect(getGlobalStorePayload()).toEqual({
-      schemaVersion: 2,
+      schemaVersion: 3,
       characters: expect.objectContaining({
         mara: expect.objectContaining({ currentSpaceId: "bunk-room" }),
       }),
       spaces: expect.objectContaining({
-        "bunk-room": expect.objectContaining({ connectedSpaceIds: ["mess-hall"] }),
+        "bunk-room": expect.objectContaining({
+          connectedSpaceIds: ["mess-hall"],
+        }),
       }),
       objects: expect.objectContaining({
         "food-station": expect.objectContaining({ spaceId: "mess-hall" }),
@@ -98,6 +108,17 @@ describe("global store session", () => {
       actionLog: expect.arrayContaining([
         expect.objectContaining({ message: "Demo shelter initialized." }),
       ]),
+      gameTime: createGameTime(),
+      timeSimulation: createTimeSimulationState(),
     })
+  })
+
+  it("advances time and runs the connected demo simulation", () => {
+    useGlobalStore.getState().advanceTime({ amount: 1, unit: "minute" })
+
+    expect(useGlobalStore.getState().session.gameTime.minutes).toBe(1)
+    expect(
+      useGlobalStore.getState().session.timeSimulation.dummySimulatedValue
+    ).toBe(60)
   })
 })

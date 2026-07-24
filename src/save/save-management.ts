@@ -8,7 +8,7 @@ import { getGlobalStorePayload, useGlobalStore } from "@/store/global-store"
 
 /** File format written when exporting a save to disk. */
 export type GameSaveFile = {
-  version: 2
+  version: 3
   name: string
   createdAt: number
   updatedAt: number
@@ -23,7 +23,7 @@ const OLD_PLACEHOLDER_SAVE_ERROR =
 export function createSaveFileFromStore(name: string): GameSaveFile {
   const timestamp = Date.now()
   return {
-    version: 2,
+    version: 3,
     name,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -32,7 +32,9 @@ export function createSaveFileFromStore(name: string): GameSaveFile {
 }
 
 /** Creates a new IndexedDB save slot from the current global store values. */
-export async function saveGameToDatabase(name: string): Promise<GameSaveRecord> {
+export async function saveGameToDatabase(
+  name: string
+): Promise<GameSaveRecord> {
   const saveFile = createSaveFileFromStore(name)
   const saveId = await gameDatabase.saves.add({
     name: saveFile.name,
@@ -50,7 +52,9 @@ export async function saveGameToDatabase(name: string): Promise<GameSaveRecord> 
 }
 
 /** Overwrites an existing IndexedDB save slot with the current global store values. */
-export async function updateGameInDatabase(saveId: number): Promise<GameSaveRecord> {
+export async function updateGameInDatabase(
+  saveId: number
+): Promise<GameSaveRecord> {
   const existingRecord = await gameDatabase.saves.get(saveId)
   if (!existingRecord) {
     throw new Error(`No save found for id ${saveId}.`)
@@ -67,7 +71,9 @@ export async function updateGameInDatabase(saveId: number): Promise<GameSaveReco
 }
 
 /** Loads a save from IndexedDB into the global store. */
-export async function loadGameFromDatabase(saveId: number): Promise<GameSaveRecord> {
+export async function loadGameFromDatabase(
+  saveId: number
+): Promise<GameSaveRecord> {
   const savedRecord = await gameDatabase.saves.get(saveId)
   if (!savedRecord) {
     throw new Error(`No save found for id ${saveId}.`)
@@ -107,7 +113,9 @@ export function saveGameToFile(name: string): void {
 /** Reads a JSON save file and writes its payload into the global store. */
 export async function loadGameFromFile(file: File): Promise<GameSaveFile> {
   const fileText = await file.text()
-  const parsedFile = JSON.parse(fileText) as Partial<Omit<GameSaveFile, "version">> & {
+  const parsedFile = JSON.parse(fileText) as Partial<
+    Omit<GameSaveFile, "version">
+  > & {
     version?: number
     payload?: unknown
   }
@@ -116,13 +124,17 @@ export async function loadGameFromFile(file: File): Promise<GameSaveFile> {
     throw new Error(OLD_PLACEHOLDER_SAVE_ERROR)
   }
 
-  if (parsedFile.version !== 2 || !parsedFile.payload) {
+  if (parsedFile.version !== 2 && parsedFile.version !== 3) {
+    throw new Error("The selected file is not a valid shelter save.")
+  }
+
+  if (!parsedFile.payload) {
     throw new Error("The selected file is not a valid shelter save.")
   }
 
   const payload = validateSavePayload(parsedFile.payload)
   const saveFile: GameSaveFile = {
-    version: 2,
+    version: 3,
     name: parsedFile.name || file.name,
     createdAt: parsedFile.createdAt || Date.now(),
     updatedAt: parsedFile.updatedAt || Date.now(),
@@ -134,7 +146,9 @@ export async function loadGameFromFile(file: File): Promise<GameSaveFile> {
 }
 
 /** Imports a JSON save file into IndexedDB and returns the new record. */
-export async function importGameFileToDatabase(file: File): Promise<GameSaveRecord> {
+export async function importGameFileToDatabase(
+  file: File
+): Promise<GameSaveRecord> {
   const saveFile = await loadGameFromFile(file)
   const saveId = await gameDatabase.saves.add({
     name: saveFile.name || file.name,
@@ -157,7 +171,9 @@ export function validateSavePayload(payload: unknown): GameSavePayload {
     throw new Error("The selected file is not a valid shelter save.")
   }
 
-  const validationResult = validateGameSessionSnapshot(payload as GameSavePayload)
+  const validationResult = validateGameSessionSnapshot(
+    payload as GameSavePayload
+  )
   if (!validationResult.ok) {
     throw new Error(validationResult.errors.join(" "))
   }

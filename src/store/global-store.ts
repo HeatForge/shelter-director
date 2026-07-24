@@ -2,9 +2,11 @@ import { create } from "zustand"
 
 import { createDemoSession } from "@/domain/demo-fixture"
 import {
+  advanceGameSessionTime,
   cloneGameSession,
   type GameSessionSnapshot,
 } from "@/domain/session"
+import type { TimeDuration } from "@/domain/time"
 import { getCharactersInSpace, getNeighborSpaces } from "@/domain/world-space"
 
 /**
@@ -16,16 +18,28 @@ export type GlobalStoreState = {
   hydrateSession: (session: GameSessionSnapshot) => void
   /** Restores the live game session to the empty baseline. */
   resetSession: () => void
+  /** Advances the live game clock and triggers its connected simulation. */
+  advanceTime: (duration: TimeDuration) => void
   /** Reads one character from the active session. */
-  getCharacter: (characterId: string) => GameSessionSnapshot["characters"][string] | undefined
+  getCharacter: (
+    characterId: string
+  ) => GameSessionSnapshot["characters"][string] | undefined
   /** Reads one space from the active session. */
-  getSpace: (spaceId: string) => GameSessionSnapshot["spaces"][string] | undefined
+  getSpace: (
+    spaceId: string
+  ) => GameSessionSnapshot["spaces"][string] | undefined
   /** Reads characters currently occupying one space. */
-  getCharactersInSpace: (spaceId: string) => GameSessionSnapshot["characters"][string][]
+  getCharactersInSpace: (
+    spaceId: string
+  ) => GameSessionSnapshot["characters"][string][]
   /** Reads spaces connected to one space. */
-  getNeighborSpaces: (spaceId: string) => GameSessionSnapshot["spaces"][string][]
+  getNeighborSpaces: (
+    spaceId: string
+  ) => GameSessionSnapshot["spaces"][string][]
   /** Reads objects currently placed in one space. */
-  getObjectsInSpace: (spaceId: string) => GameSessionSnapshot["objects"][string][]
+  getObjectsInSpace: (
+    spaceId: string
+  ) => GameSessionSnapshot["objects"][string][]
 }
 
 /** Global store hook for the authoritative game session. */
@@ -33,12 +47,19 @@ export const useGlobalStore = create<GlobalStoreState>((set, get) => ({
   session: createDemoSession(),
   hydrateSession: (session) => set({ session: cloneGameSession(session) }),
   resetSession: () => set({ session: createDemoSession() }),
+  advanceTime: (duration) =>
+    set((state) => ({
+      session: advanceGameSessionTime(state.session, duration),
+    })),
   getCharacter: (characterId) => get().session.characters[characterId],
   getSpace: (spaceId) => get().session.spaces[spaceId],
-  getCharactersInSpace: (spaceId) => getCharactersInSpace(get().session, spaceId),
+  getCharactersInSpace: (spaceId) =>
+    getCharactersInSpace(get().session, spaceId),
   getNeighborSpaces: (spaceId) => getNeighborSpaces(get().session, spaceId),
   getObjectsInSpace: (spaceId) =>
-    Object.values(get().session.objects).filter((object) => object.spaceId === spaceId),
+    Object.values(get().session.objects).filter(
+      (object) => object.spaceId === spaceId
+    ),
 }))
 
 /** Reads the active game session into a saveable payload. */
